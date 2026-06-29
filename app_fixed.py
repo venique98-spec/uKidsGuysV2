@@ -50,7 +50,7 @@ TEAL   = "#5BC4C0"
 ORANGE = "#E8724A"
 PURPLE = "#7B4FA6"
 YELLOW = "#F5C842"
-CREAM  = "#FAF6EE"
+CREAM  = "#FFFAE7"
 WHITE  = "#FFFFFF"
 DARK   = "#2A2A2A"
 MUTED  = "#7A6F6F"
@@ -260,19 +260,13 @@ if _logo_src:
     st.markdown(f"""
 <div style="text-align:center;padding:18px 0 10px;">
   <img src="{_logo_src}" alt="uKids"
-       style="max-height:110px;max-width:280px;object-fit:contain;">
-  <p style="font-size:0.95rem;color:{MUTED};margin:10px 0 0;font-weight:600;">
-    Future leaders in the making.
-  </p>
+       style="width:100%;max-width:430px;object-fit:contain;">
 </div>
 """, unsafe_allow_html=True)
 else:
     st.markdown(f"""
 <div style="text-align:center;padding:18px 0 10px;">
   <h2 style="color:{TEAL};font-weight:900;margin:0;">uKids Availability</h2>
-  <p style="font-size:0.95rem;color:{MUTED};margin:8px 0 0;font-weight:600;">
-    Future leaders in the making.
-  </p>
 </div>
 """, unsafe_allow_html=True)
 
