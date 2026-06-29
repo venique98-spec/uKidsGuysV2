@@ -256,19 +256,23 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-logo_img_html = (
-    f'<img src="{_logo_src}" alt="uKids" '
-    f'style="max-height:80px;max-width:240px;object-fit:contain;'
-    f'margin:0 auto 10px;display:block;">'
-    if _logo_src else "<h1>uKids Availability</h1>"
-)
-
-st.markdown(f"""
-<div class="ukids-hero">
-  <div class="ukids-hero-content">
-    {logo_img_html}
-    <p>Future leaders in the making.</p>
-  </div>
+if _logo_src:
+    st.markdown(f"""
+<div style="text-align:center;padding:18px 0 10px;">
+  <img src="{_logo_src}" alt="uKids"
+       style="max-height:110px;max-width:280px;object-fit:contain;">
+  <p style="font-size:0.95rem;color:{MUTED};margin:10px 0 0;font-weight:600;">
+    Future leaders in the making.
+  </p>
+</div>
+""", unsafe_allow_html=True)
+else:
+    st.markdown(f"""
+<div style="text-align:center;padding:18px 0 10px;">
+  <h2 style="color:{TEAL};font-weight:900;margin:0;">uKids Availability</h2>
+  <p style="font-size:0.95rem;color:{MUTED};margin:8px 0 0;font-weight:600;">
+    Future leaders in the making.
+  </p>
 </div>
 """, unsafe_allow_html=True)
 
