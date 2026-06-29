@@ -247,7 +247,7 @@ st.markdown("""
 <div class="ukids-hero">
   <div class="ukids-hero-content">
     <h1>uKids Availability</h1>
-    <p>Serving together, one month at a time.</p>
+    <p>Future leaders in the making.</p>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1170,6 +1170,127 @@ elif st.session_state.page == "changes":
     <thead><tr>{headers_html}</tr></thead>
     <tbody>{rows_html}</tbody>
   </table>
+</div>
+""", unsafe_allow_html=True)
+
+    st.stop()
+
+
+# ═════════════════════════════════════════════════════════════
+# PAGE: SERVING POSITIONS
+# ═════════════════════════════════════════════════════════════
+elif st.session_state.page == "positions":
+
+    back_button()
+
+    st.markdown("""
+<div class="ukids-card ukids-card-yellow">
+  <span class="section-pill">Your roles</span>
+  <h3>Serving Positions</h3>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div class="info-banner">
+  These are the positions you are able to serve in.<br>
+  <strong>Priority 1</strong> is your best fit — at least one of those must be met when you're scheduled.
+  The other priorities are used to fill gaps.
+</div>
+""", unsafe_allow_html=True)
+
+    # Load mapping sheet (acronym → full name)
+    with st.spinner("Loading positions…"):
+        mapping_df  = fetch_mapping_df()
+        person_row  = sb_df[
+            sb_df["Name"].astype(str).str.strip().str.lower()
+            == st.session_state.user_name.strip().lower()
+        ]
+
+    if person_row.empty:
+        st.error("Could not find your profile in the team sheet.")
+        st.stop()
+
+    person_row = person_row.iloc[0]
+
+    # Build a lookup dict: shortened_name → display_name
+    if not mapping_df.empty:
+        name_map = dict(zip(
+            mapping_df["shortened_name"].str.lower(),
+            mapping_df["display_name"]
+        ))
+    else:
+        name_map = {}
+
+    def resolve_name(acronym: str) -> str:
+        """Return the full display name for an acronym, or the acronym itself if not found."""
+        return name_map.get(str(acronym).strip().lower(), str(acronym).strip())
+
+    def get_positions_for_group(columns: list) -> list:
+        """
+        Given a list of column names (e.g. ['1A','1B','1C','1D','1E']),
+        return the list of non-empty, non-N/A display names.
+        """
+        results = []
+        for col in columns:
+            if col not in person_row.index:
+                continue
+            val = str(person_row[col]).strip()
+            if val == "" or val.lower() in ("n/a", "na", "none", "-"):
+                continue
+            results.append(resolve_name(val))
+        return results
+
+    # Define priority groups: label, slot columns, badge class, chip class, description
+    priority_groups = [
+        ("Priority 1 — Primary fit",
+         ["1A", "1B", "1C", "1D", "1E"],
+         "badge-1", "position-chip",
+         "At least one of these will always be met when you're scheduled."),
+        ("Priority 2 — Secondary fit",
+         ["2A", "2B", "2C", "2D", "2E"],
+         "badge-2", "position-chip position-chip-2",
+         "Used when there are gaps to fill."),
+        ("Priority 3 — Third option",
+         ["3A", "3B", "3C", "3D", "3E"],
+         "badge-3", "position-chip position-chip-3",
+         "Used when higher priorities are fully covered."),
+        ("Priority 4 — Fourth option",
+         ["4A", "4B"],
+         "badge-4", "position-chip position-chip-4",
+         "Occasional fill-in positions."),
+        ("Priority 5 — Last resort",
+         ["5"],
+         "badge-5", "position-chip position-chip-5",
+         "Only used when all other options are exhausted."),
+    ]
+
+    any_positions_found = False
+
+    for label, cols, badge_cls, chip_cls, description in priority_groups:
+        positions = get_positions_for_group(cols)
+        if not positions:
+            continue
+        any_positions_found = True
+
+        chips_html = "".join(
+            f'<div class="{chip_cls}">{pos}</div>' for pos in positions
+        )
+
+        st.markdown(f"""
+<div class="ukids-card" style="margin-bottom:14px;">
+  <div class="priority-label">
+    <span class="priority-badge {badge_cls}">{label}</span>
+  </div>
+  <div style="font-size:0.78rem;color:#7A6F6F;margin-bottom:10px;">{description}</div>
+  <div class="position-chips">{chips_html}</div>
+</div>
+""", unsafe_allow_html=True)
+
+    if not any_positions_found:
+        st.markdown("""
+<div class="closed-banner">
+  No serving positions have been set up for your profile yet.<br>
+  Contact Veniqué if you think this is a mistake.
 </div>
 """, unsafe_allow_html=True)
 
