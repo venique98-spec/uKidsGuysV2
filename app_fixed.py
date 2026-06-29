@@ -61,6 +61,19 @@ MUTED  = "#7A6F6F"
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(page_title="uKids Availability", page_icon="🗓️", layout="centered")
 
+# Serve the logo from the repo root via Streamlit's static file support
+import base64, pathlib
+
+def _img_to_b64(path: str) -> str:
+    try:
+        data = pathlib.Path(path).read_bytes()
+        return base64.b64encode(data).decode()
+    except Exception:
+        return ""
+
+_logo_b64 = _img_to_b64("uKids logo.png")
+_logo_src  = f"data:image/png;base64,{_logo_b64}" if _logo_b64 else ""
+
 st.markdown(f"""
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -243,10 +256,17 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""
+logo_img_html = (
+    f'<img src="{_logo_src}" alt="uKids" '
+    f'style="max-height:80px;max-width:240px;object-fit:contain;'
+    f'margin:0 auto 10px;display:block;">'
+    if _logo_src else "<h1>uKids Availability</h1>"
+)
+
+st.markdown(f"""
 <div class="ukids-hero">
   <div class="ukids-hero-content">
-    <h1>uKids Availability</h1>
+    {logo_img_html}
     <p>Future leaders in the making.</p>
   </div>
 </div>
