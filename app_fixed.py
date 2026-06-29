@@ -45,6 +45,26 @@ TAB_DEADLINES       = "Guys Deadlines"
 TAB_DATES           = "Kids & Guys ServiceDates"
 TAB_CHANGE_LOG      = "uKids Change Log"
 TAB_MAPPING         = "Mapping sheet"
+TAB_APPROVALS       = "uKids Approvals"
+
+# ── Role constants ──────────────────────────────────────────
+ROLE_MEMBER   = "serving member"
+ROLE_DIRECTOR = "director"
+ROLE_ADMIN    = "admin"
+ROLE_PASTOR   = "pastor"
+
+PRIORITY_GROUPS = {
+    "Priority 1": ["1A", "1B", "1C", "1D", "1E"],
+    "Priority 2": ["2A", "2B", "2C", "2D", "2E"],
+    "Priority 3": ["3A", "3B", "3C", "3D", "3E"],
+    "Priority 4": ["4A", "4B"],
+    "Priority 5": ["5"],
+}
+
+DIRECTOR_CONFIRM_TEXT = (
+    "I confirm that I will not share this information with any serving member, "
+    "as it is intended solely for director verification purposes."
+)
 
 TEAL   = "#5BC4C0"
 ORANGE = "#E8724A"
@@ -455,7 +475,41 @@ def fetch_mapping_df():
     return df
 
 
-def clear_caches():
+@st.cache_data(ttl=30, show_spinner=False)
+def fetch_approvals_df():
+    sh = get_spreadsheet()
+    ws = ensure_worksheet(sh, TAB_APPROVALS, rows=2000, cols=10)
+    _, _, df = ws_get_values_and_df(ws)
+    return df
+
+
+def append_approval_request(row_map: dict):
+    desired_header = ["timestamp", "request_type", "requested_by",
+                      "subject_name", "detail", "status", "actioned_by", "actioned_at"]
+    sh = get_spreadsheet()
+    ws = ensure_worksheet(sh, TAB_APPROVALS, rows=2000, cols=10)
+    header = ws_ensure_header(ws, desired_header)
+    row    = [row_map.get(col, "") for col in header]
+    gs_retry(ws.append_row, row)
+
+
+def update_approval_status(row_number: int, status: str, actioned_by: str):
+    """row_number is 1-based Google Sheets row (header = row 1, data starts row 2)."""
+    sh  = get_spreadsheet()
+    ws  = ensure_worksheet(sh, TAB_APPROVALS, rows=2000, cols=10)
+    now = datetime.utcnow().isoformat() + "Z"
+    # Find status col index
+    header = gs_retry(ws.row_values, 1)
+    try:
+        status_col    = header.index("status") + 1
+        actioned_col  = header.index("actioned_by") + 1
+        actioned_at_col = header.index("actioned_at") + 1
+    except ValueError:
+        return
+    gs_retry(ws.update_cell, row_number, status_col, status)
+    gs_retry(ws.update_cell, row_number, actioned_col, actioned_by)
+    gs_retry(ws.update_cell, row_number, actioned_at_col, now)
+    clear_caches()
     try:
         st.cache_data.clear()
     except Exception:
@@ -581,8 +635,11 @@ def login_user(sb_df: pd.DataFrame, username: str, password: str):
     ]
     if match.empty:
         return None, "Incorrect username/password, or account is inactive."
-    row = match.iloc[0]
-    return {"name": row["Name"], "username": row["Username"]}, ""
+    row  = match.iloc[0]
+    role = str(row.get("Role", "serving member")).strip().lower() if "Role" in row.index else ROLE_MEMBER
+    if role not in (ROLE_MEMBER, ROLE_DIRECTOR, ROLE_ADMIN, ROLE_PASTOR):
+        role = ROLE_MEMBER
+    return {"name": row["Name"], "username": row["Username"], "role": role}, ""
 
 
 def build_final_guys_df(responses_df: pd.DataFrame, month_key: str):
@@ -667,7 +724,8 @@ for key, default in [
     ("logged_in", False),
     ("user_name", ""),
     ("username",  ""),
-    ("page",      "home"),   # home | availability | schedule | changes | positions
+    ("role",      ROLE_MEMBER),
+    ("page",      "home"),   # home | availability | schedule | changes | positions | my_team | approvals | admin
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
